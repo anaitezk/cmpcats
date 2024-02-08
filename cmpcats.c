@@ -86,7 +86,6 @@ void compare_directories(const char *dirA, const char *dirB)
                         found = 1;
                         compare_directories(pathA, pathB);
                         compare_directories(pathB, pathA);
-                        printf("comparing dirs when found = 1 %s and %s\n", entryA->d_name, entryB->d_name);
                         break;
                     }
                 }
