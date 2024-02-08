@@ -76,7 +76,6 @@ void compare_directories(const char *dirA, const char *dirB)
             // Compare elements
             if ((statA.st_mode & S_IFMT) == S_IFDIR && (statB.st_mode & S_IFMT) == S_IFDIR)
             {
-
                 // If both are directories, recursively compare contents
                 if (strcmp(entryA->d_name, ".") != 0 && strcmp(entryA->d_name, "..") != 0 &&
                     strcmp(entryB->d_name, ".") != 0 && strcmp(entryB->d_name, "..") != 0)
@@ -85,14 +84,12 @@ void compare_directories(const char *dirA, const char *dirB)
                     {
                         found = 1;
                         compare_directories(pathA, pathB);
-                        compare_directories(pathB, pathA);
                         break;
                     }
                 }
             }
             else if ((statA.st_mode & S_IFMT) == S_IFREG && (statB.st_mode & S_IFMT) == S_IFREG)
             {
-                // printf("files %s and %s\n", entryA->d_name, entryB->d_name);
                 // If both are regular files, compare their attributes
                 if (strcmp(entryA->d_name, entryB->d_name) == 0 && statA.st_size == statB.st_size)
                 {
@@ -129,12 +126,17 @@ void compare_directories(const char *dirA, const char *dirB)
 
                 char path[2000];
                 snprintf(path, sizeof(path), "%s/%s", pathA, entry->d_name);
+
                 if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
                 {
                     printf("%s\n", path);
                 }
+                 struct stat substatA;
+                if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFDIR) {
+                    // Check if subpathA is a directory
+                    compare_directories(path, dirB); // Recursively compare subdirectory contents
+                }
             }
-
             closedir(dir);
         }
 
