@@ -75,8 +75,8 @@ void compare_directories(const char *dirA, const char *dirB)
 
             // Compare elements
             if ((statA.st_mode & S_IFMT) == S_IFDIR && (statB.st_mode & S_IFMT) == S_IFDIR)
-            {   
-                
+            {
+
                 // If both are directories, recursively compare contents
                 if (strcmp(entryA->d_name, ".") != 0 && strcmp(entryA->d_name, "..") != 0 &&
                     strcmp(entryB->d_name, ".") != 0 && strcmp(entryB->d_name, "..") != 0)
@@ -86,33 +86,8 @@ void compare_directories(const char *dirA, const char *dirB)
                         found = 1;
                         compare_directories(pathA, pathB);
                         compare_directories(pathB, pathA);
+                        printf("comparing dirs when found = 1 %s and %s\n", entryA->d_name, entryB->d_name);
                         break;
-                    }
-                    else //If the directories do not have the same name, their contents cannot be the same
-                    //So, print the full path of the contents of this directory as they're different
-                    {   
-                        DIR *dir = opendir(pathA);
-                        if (dir == NULL)
-                        {
-                            printf("Failed to open directory %s\n", pathA);
-                            return;
-                        }
-
-                        struct dirent *entry;
-                        while ((entry = readdir(dir)) != NULL)
-                        {
-                            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-                                continue;
-                            
-                            char path[2000];
-                            snprintf(path, sizeof(path), "%s/%s", pathA, entry->d_name); 
-                            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
-                            {
-                                printf("%s\n", path);
-                            }
-                        }
-
-                        closedir(dir);
                     }
                 }
             }
@@ -136,6 +111,32 @@ void compare_directories(const char *dirA, const char *dirB)
                     break;
                 }
             }
+        }
+
+        if ((statA.st_mode & S_IFMT) == S_IFDIR && found == 0) // In case entryA is a directory and found is 0, print its contents
+        {
+            DIR *dir = opendir(pathA);
+            if (dir == NULL)
+            {
+                printf("Failed to open directory %s\n", pathA);
+                return;
+            }
+
+            struct dirent *entry;
+            while ((entry = readdir(dir)) != NULL)
+            {
+                if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                    continue;
+
+                char path[2000];
+                snprintf(path, sizeof(path), "%s/%s", pathA, entry->d_name);
+                if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+                {
+                    printf("%s\n", path);
+                }
+            }
+
+            closedir(dir);
         }
 
         // If entryA is not found in dirB
