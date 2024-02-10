@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-int compareFileContents(const char *fileA, const char *fileB) //Function to compare the contents of 2 files.
-                                                              //Returns 1 only if the files have the same content
+int compareFileContents(const char *fileA, const char *fileB) // Function to compare the contents of 2 files.
+                                                              // Returns 1 only if the files have the same content
 {
     int fdA, fdB;
     long sizeA, sizeB;
@@ -20,13 +20,13 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
 
     // Open files
     fdA = open(fileA, O_RDONLY);
-    if (fdA == -1) //Check for correct opening
+    if (fdA == -1) // Check for correct opening
     {
         perror("Failed to open file A");
         return -1;
     }
     fdB = open(fileB, O_RDONLY);
-    if (fdB == -1) //Check for correct opening
+    if (fdB == -1) // Check for correct opening
     {
         perror("Failed to open file B");
         close(fdA);
@@ -35,7 +35,7 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
 
     // Get size of file A
     sizeA = lseek(fdA, 0, SEEK_END);
-    if (sizeA == -1) //Check for correct operation of lseek
+    if (sizeA == -1) // Check for correct operation of lseek
     {
         perror("Failed to get file size of file A");
         close(fdA);
@@ -45,7 +45,7 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
 
     // Get size of file B
     sizeB = lseek(fdB, 0, SEEK_END);
-    if (sizeB == -1) //Check for correct operation of lseek
+    if (sizeB == -1) // Check for correct operation of lseek
     {
         perror("Failed to get file size of file B");
         close(fdA);
@@ -57,8 +57,8 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
     if (sizeA == sizeB)
     {
         // Compare file contents
-        char *bufferA = malloc(sizeA); //Allocate memory for buffer
-        if (bufferA == NULL) //check for correct allocation
+        char *bufferA = malloc(sizeA); // Allocate memory for buffer
+        if (bufferA == NULL)           // check for correct allocation
         {
             perror("Failed to allocate memory for buffer A");
             free(bufferA);
@@ -66,8 +66,8 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
             close(fdB);
             return -1;
         }
-        char *bufferB = malloc(sizeB); //Allocate memory for buffer
-        if (bufferB == NULL) //check for correct alloation
+        char *bufferB = malloc(sizeB); // Allocate memory for buffer
+        if (bufferB == NULL)           // check for correct alloation
         {
             perror("Failed to allocate memory for buffer B");
             free(bufferA);
@@ -80,12 +80,12 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
         lseek(fdA, 0, SEEK_SET); // Reset file pointers to beginning
         lseek(fdB, 0, SEEK_SET);
 
-        bytesReadA = read(fdA, bufferA, sizeA); //Read all the contents of fileA
-        bytesReadB = read(fdB, bufferB, sizeB); //Read all the contents of fileB
+        bytesReadA = read(fdA, bufferA, sizeA); // Read all the contents of fileA
+        bytesReadB = read(fdB, bufferB, sizeB); // Read all the contents of fileB
 
-        if (memcmp(bufferA, bufferB, sizeA) != 0) //Check if contents are different
+        if (memcmp(bufferA, bufferB, sizeA) != 0) // Check if contents are different
         {
-            //printf("The file contents are different\n");
+            // printf("The file contents are different\n");
             free(bufferA);
             free(bufferB);
             close(fdA);
@@ -93,36 +93,36 @@ int compareFileContents(const char *fileA, const char *fileB) //Function to comp
             return 0; // Contents differ
         }
 
-        free(bufferA); //Deallocate buffer memory
-        free(bufferB); //Deallocate buffer memory
-        close(fdA); //Close fileA
-        close(fdB); //Close fileB
+        free(bufferA); // Deallocate buffer memory
+        free(bufferB); // Deallocate buffer memory
+        close(fdA);    // Close fileA
+        close(fdB);    // Close fileB
     }
 
     return 1; // Contents are the same
 }
 
-int findDifferences(const char *dirA, const char *dirB) //Function which recursively checks if the contents of dirA are also found in dirB
-                                                        //It returns 0 only in case the firectories are identical, non 0 value otherwise.
+int findDifferences(const char *dirA, const char *dirB) // Function which recursively checks if the contents of dirA are also found in dirB
+                                                        // It returns 0 only in case the firectories are identical, non 0 value otherwise.
 {
     int count = 0;
-    DIR *dirA_ptr = opendir(dirA); //Open dirA
-    if (!dirA_ptr) //Check for correct opening of directory
+    DIR *dirA_ptr = opendir(dirA); // Open dirA
+    if (!dirA_ptr)                 // Check for correct opening of directory
     {
         printf("Failed to open directory %s\n", dirA);
         return -1;
     }
 
-    DIR *dirB_ptr = opendir(dirB); //Open dirB
-    if (!dirB_ptr) //Check for correct opening of directory
+    DIR *dirB_ptr = opendir(dirB); // Open dirB
+    if (!dirB_ptr)                 // Check for correct opening of directory
     {
         printf("Failed to open directory %s\n", dirB);
         closedir(dirA_ptr);
         return -1;
     }
 
-    struct dirent *entryA, *entryB; //Directory entries for dirA,dirB
-    struct stat statA, statB; //structs for the stats of dirA and dirB
+    struct dirent *entryA, *entryB; // Directory entries for dirA,dirB
+    struct stat statA, statB;       // structs for the stats of dirA and dirB
 
     // Traverse dirA as long as there are contents
     while ((entryA = readdir(dirA_ptr)) != NULL)
@@ -132,7 +132,7 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
             continue;
 
         char pathA[1000], pathB[1000];
-        sprintf(pathA, "%s/%s", dirA, entryA->d_name); //get the complete path of entryA
+        sprintf(pathA, "%s/%s", dirA, entryA->d_name); // get the complete path of entryA
 
         // Reset dirB_ptr to the beginning
         rewinddir(dirB_ptr);
@@ -141,13 +141,13 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
         int found = 0;
 
         // Traverse dirB to find entryA as long as there are contents
-        while ((entryB = readdir(dirB_ptr)) != NULL) 
+        while ((entryB = readdir(dirB_ptr)) != NULL)
         {
             // Skip current and parent directory
             if (strcmp(entryB->d_name, ".") == 0 || strcmp(entryB->d_name, "..") == 0)
                 continue;
 
-            sprintf(pathB, "%s/%s", dirB, entryB->d_name); //get full path of entryB
+            sprintf(pathB, "%s/%s", dirB, entryB->d_name); // get full path of entryB
 
             // Get file stats for element in dirA
             if (stat(pathA, &statA) == -1)
@@ -165,13 +165,13 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
 
             // Compare elements
 
-            //If both are directories
+            // If both are directories
             if ((statA.st_mode & S_IFMT) == S_IFDIR && (statB.st_mode & S_IFMT) == S_IFDIR)
             {
-                // Compare their names 
+                // Compare their names
                 if (strcmp(entryA->d_name, ".") != 0 && strcmp(entryA->d_name, "..") != 0 &&
                     strcmp(entryB->d_name, ".") != 0 && strcmp(entryB->d_name, "..") != 0)
-                {   
+                {
                     // If they have the same names recursively compare their contents
                     if (strcmp(entryA->d_name, entryB->d_name) == 0)
                     {
@@ -181,7 +181,7 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
                     }
                 }
             }
-            //If both are files
+            // If both are files
             else if ((statA.st_mode & S_IFMT) == S_IFREG && (statB.st_mode & S_IFMT) == S_IFREG)
             {
                 // Compare their names, sizes and contents
@@ -191,11 +191,11 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
                     break;
                 }
             }
-            //If both are symbolic links
+            // If both are symbolic links
             else if ((statA.st_mode & S_IFMT) == S_IFLNK && (statB.st_mode & S_IFMT) == S_IFLNK)
             {
                 // Compare their names
-                if (strcmp(entryA->d_name, entryB->d_name) == 0)
+                if (strcmp(entryA->d_name, entryB->d_name) == 0 && statA.st_ino == statB.st_ino)
                 {
                     found = 1;
                     break;
@@ -203,46 +203,46 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
             }
         }
 
-        if ((statA.st_mode & S_IFMT) == S_IFDIR && found == 0) /* In case entryA is a directory and found is 0 
-        (which means that the directories are not the same, so their contents should be printed to indicate the difference), 
+        if ((statA.st_mode & S_IFMT) == S_IFDIR && found == 0) /* In case entryA is a directory and found is 0
+        (which means that the directories are not the same, so their contents should be printed to indicate the difference),
         print its contents */
         {
-            DIR *dir = opendir(pathA); //Open directory 
-            if (dir == NULL) //Check for correct opening
+            DIR *dir = opendir(pathA); // Open directory
+            if (dir == NULL)           // Check for correct opening
             {
                 printf("Failed to open directory %s\n", pathA);
                 return -1;
             }
 
-            struct dirent *entry; //Directory entry
+            struct dirent *entry; // Directory entry
 
-            //Traverse the directory as long as there are contents
-            while ((entry = readdir(dir)) != NULL) 
-            {   
-                //Skip current and parent directory
+            // Traverse the directory as long as there are contents
+            while ((entry = readdir(dir)) != NULL)
+            {
+                // Skip current and parent directory
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
 
                 char path[2000];
-                sprintf(path, "%s/%s", pathA, entry->d_name); //get the full path of the entry
+                sprintf(path, "%s/%s", pathA, entry->d_name); // get the full path of the entry
 
                 printf("%s\n", path); // print the full path
 
-                struct stat substatA; //struct for the stats of path
+                struct stat substatA; // struct for the stats of path
 
                 if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFDIR) // Check if path is a directory
-                {   
+                {
                     findDifferences(path, dirB); // Recursively compare subdirectory contents in order to print them as we already know they are different
                 }
             }
-            closedir(dir); //close the directory
+            closedir(dir); // close the directory
         }
 
         // If entryA is not found in dirB
         if (!found)
         {
             count++;
-            printf("%s\n", pathA); //print the full path to entryA
+            printf("%s\n", pathA); // print the full path to entryA
         }
     }
 
@@ -250,20 +250,20 @@ int findDifferences(const char *dirA, const char *dirB) //Function which recursi
     closedir(dirA_ptr);
     closedir(dirB_ptr);
 
-    //return the count which indicates if there are differences
+    // return the count which indicates if there are differences
     return count;
 }
 
-void compareDirectories(char *dirA, char *dirB) //Function to call the findDifferencies function
+void compareDirectories(char *dirA, char *dirB) // Function to call the findDifferencies function
 {
-    printf("In %s:\n", dirA); //First checking if the contents of dirA are found in dirB
+    printf("In %s:\n", dirA); // First checking if the contents of dirA are found in dirB
     int diffs1 = findDifferences(dirA, dirB);
 
-    printf("In %s:\n", dirB); //Then checking if the contents of dirB are fount in dirA
+    printf("In %s:\n", dirB); // Then checking if the contents of dirB are fount in dirA
     int diffs2 = findDifferences(dirB, dirA);
 
-    if (!diffs1 && !diffs2) //If there are no differencies
+    if (!diffs1 && !diffs2) // If there are no differencies
     {
-        printf("No differences between %s and %s\n", dirA, dirB); //print a message
+        printf("No differences between %s and %s\n", dirA, dirB); // print a message
     }
 }
