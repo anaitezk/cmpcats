@@ -5,11 +5,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
-
-#include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include "list.h"
+
 
 int compareFileContents(const char *fileA, const char *fileB) // Function to compare the contents of 2 files.
                                                               // Returns 1 only if the files have the same content
@@ -102,7 +100,7 @@ int compareFileContents(const char *fileA, const char *fileB) // Function to com
     return 1; // Contents are the same
 }
 
-int findDifferences(const char *dirA, const char *dirB) // Function which recursively checks if the contents of dirA are also found in dirB
+int findDifferences(const char *dirA, const char *dirB, List commonPaths, List differentPaths) // Function which recursively checks if the contents of dirA are also found in dirB
                                                         // It returns 0 only in case the firectories are identical, non 0 value otherwise.
 {
     int count = 0;
@@ -132,7 +130,7 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
             continue;
 
         char pathA[1000], pathB[1000];
-        sprintf(pathA, "%s/%s", dirA, entryA->d_name); // get the complete path of entryA
+        sprintf(pathA, "%s/%s", dirA, entryA->d_name); // get the full path of entryA
 
         // Reset dirB_ptr to the beginning
         rewinddir(dirB_ptr);
@@ -176,7 +174,8 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
                     if (strcmp(entryA->d_name, entryB->d_name) == 0)
                     {
                         found = 1;
-                        findDifferences(pathA, pathB);
+                        push(commonPaths, pathA);
+                        findDifferences(pathA, pathB, commonPaths, differentPaths);
                         break;
                     }
                 }
@@ -188,6 +187,7 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
                 if (strcmp(entryA->d_name, entryB->d_name) == 0 && statA.st_size == statB.st_size && compareFileContents(pathA, pathB) == 1)
                 {
                     found = 1;
+                    push(commonPaths, pathA);
                     break;
                 }
             }
@@ -198,6 +198,7 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
                 if (strcmp(entryA->d_name, entryB->d_name) == 0 && statA.st_ino == statB.st_ino)
                 {
                     found = 1;
+                    push(commonPaths, pathA);
                     break;
                 }
             }
@@ -227,12 +228,16 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
                 sprintf(path, "%s/%s", pathA, entry->d_name); // get the full path of the entry
 
                 printf("%s\n", path); // print the full path
+                push(differentPaths, path);
+                // PrintList(differentPaths);
 
                 struct stat substatA; // struct for the stats of path
 
                 if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFDIR) // Check if path is a directory
                 {
-                    findDifferences(path, dirB); // Recursively compare subdirectory contents in order to print them as we already know they are different
+                    push(differentPaths, path);
+                    findDifferences(path, dirB, commonPaths, differentPaths); // Recursively compare subdirectory contents in order to print them as we already know they are different
+                    push(differentPaths, path);
                 }
             }
             closedir(dir); // close the directory
@@ -243,6 +248,7 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
         {
             count++;
             printf("%s\n", pathA); // print the full path to entryA
+            push(differentPaths, pathA);
         }
     }
 
@@ -255,15 +261,27 @@ int findDifferences(const char *dirA, const char *dirB) // Function which recurs
 }
 
 void compareDirectories(char *dirA, char *dirB) // Function to call the findDifferencies function
-{
+{   
+    List commonPaths = Create();
+    List differentPaths = Create();
+
     printf("In %s:\n", dirA); // First checking if the contents of dirA are found in dirB
-    int diffs1 = findDifferences(dirA, dirB);
+    int diffs1 = findDifferences(dirA, dirB, commonPaths, differentPaths);
 
     printf("In %s:\n", dirB); // Then checking if the contents of dirB are fount in dirA
-    int diffs2 = findDifferences(dirB, dirA);
+    int diffs2 = findDifferences(dirB, dirA, commonPaths, differentPaths);
+    printf("COMMON PATHS:\n");
+    PrintList(commonPaths);
+    printf("DIFFERENT PATHS:\n");
+    PrintList(differentPaths);
 
     if (!diffs1 && !diffs2) // If there are no differencies
     {
         printf("No differences between %s and %s\n", dirA, dirB); // print a message
     }
+
+    deleteList(commonPaths);
+    deleteList(differentPaths);
+
+    return;
 }
