@@ -36,7 +36,6 @@ int main(int argc, char **argv)
     }
     else
     {
-        printf("dirA = %s, dirB = %s, dirC = %s\n", dirA, dirB, dirC);
         mergeDirectories(dirA,dirB,dirC);
     }
 

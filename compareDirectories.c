@@ -83,7 +83,6 @@ int compareFileContents(const char *fileA, const char *fileB) // Function to com
 
         if (memcmp(bufferA, bufferB, sizeA) != 0) // Check if contents are different
         {
-            // printf("The file contents are different\n");
             free(bufferA);
             free(bufferB);
             close(fdA);
@@ -174,8 +173,8 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
                     if (strcmp(entryA->d_name, entryB->d_name) == 0)
                     {
                         found = 1;
-                        push(commonPaths, pathA);
                         findDifferences(pathA, pathB, commonPaths, differentPaths);
+                        push(commonPaths, pathA);
                         break;
                     }
                 }
@@ -227,17 +226,17 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
                 char path[2000];
                 sprintf(path, "%s/%s", pathA, entry->d_name); // get the full path of the entry
 
-                printf("%s\n", path); // print the full path
-                push(differentPaths, path);
-                // PrintList(differentPaths);
-
                 struct stat substatA; // struct for the stats of path
 
-                if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFDIR) // Check if path is a directory
+                if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFREG)
                 {
-                    push(differentPaths, path);
+                    push(differentPaths, path); //In case it is a file, insert in the differentPaths list
+                }
+
+                if ((substatA.st_mode & S_IFMT) == S_IFDIR) // Check if path is a directory
+                {   
                     findDifferences(path, dirB, commonPaths, differentPaths); // Recursively compare subdirectory contents in order to print them as we already know they are different
-                    push(differentPaths, path);
+                    push(differentPaths, path); //Insert the directory inside the differentPaths list
                 }
             }
             closedir(dir); // close the directory
@@ -247,8 +246,8 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
         if (!found)
         {
             count++;
-            printf("%s\n", pathA); // print the full path to entryA
-            push(differentPaths, pathA);
+            //printf("%s\n", pathA); // print the full path to entryA
+            push(differentPaths, pathA); //Insert entry in differentPaths list
         }
     }
 
@@ -262,26 +261,28 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
 
 void compareDirectories(char *dirA, char *dirB) // Function to call the findDifferencies function
 {   
+    //Creating lists for saving the results of the comparison
     List commonPaths = Create();
-    List differentPaths = Create();
+    List differentPathsA = Create();
+    List differentPathsB = Create();
 
     printf("In %s:\n", dirA); // First checking if the contents of dirA are found in dirB
-    int diffs1 = findDifferences(dirA, dirB, commonPaths, differentPaths);
+    int diffs1 = findDifferences(dirA, dirB, commonPaths, differentPathsA); 
+    PrintList(differentPathsA); //Printing the differencies between dirA and dirB
 
     printf("In %s:\n", dirB); // Then checking if the contents of dirB are fount in dirA
-    int diffs2 = findDifferences(dirB, dirA, commonPaths, differentPaths);
-    printf("COMMON PATHS:\n");
-    PrintList(commonPaths);
-    printf("DIFFERENT PATHS:\n");
-    PrintList(differentPaths);
+    int diffs2 = findDifferences(dirB, dirA, commonPaths, differentPathsB);
+    PrintList(differentPathsB); //Printing the differencies between dirB and dirA
 
     if (!diffs1 && !diffs2) // If there are no differencies
     {
         printf("No differences between %s and %s\n", dirA, dirB); // print a message
     }
 
+    //delete the lists
     deleteList(commonPaths);
-    deleteList(differentPaths);
+    deleteList(differentPathsA);
+    deleteList(differentPathsB);
 
     return;
 }
