@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include "list.h"
 
-
 int compareFileContents(const char *fileA, const char *fileB) // Function to compare the contents of 2 files.
                                                               // Returns 1 only if the files have the same content
 {
@@ -95,12 +94,16 @@ int compareFileContents(const char *fileA, const char *fileB) // Function to com
         close(fdA);    // Close fileA
         close(fdB);    // Close fileB
     }
+    else
+    {
+        return 0; // If the files' sizes are different, contents differ
+    }
 
     return 1; // Contents are the same
 }
 
 int findDifferences(const char *dirA, const char *dirB, List commonPaths, List differentPaths) // Function which recursively checks if the contents of dirA are also found in dirB
-                                                        // It returns 0 only in case the firectories are identical, non 0 value otherwise.
+                                                                                               // It returns 0 only in case the firectories are identical, non 0 value otherwise.
 {
     int count = 0;
     DIR *dirA_ptr = opendir(dirA); // Open dirA
@@ -147,14 +150,14 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
             sprintf(pathB, "%s/%s", dirB, entryB->d_name); // get full path of entryB
 
             // Get file stats for element in dirA
-            if (stat(pathA, &statA) == -1)
+            if (lstat(pathA, &statA) == -1)
             {
                 printf("Failed to get stats for file %s\n", pathA);
                 continue;
             }
 
             // Get file stats for element in dirB
-            if (stat(pathB, &statB) == -1)
+            if (lstat(pathB, &statB) == -1)
             {
                 printf("Failed to get stats for file %s\n", pathB);
                 continue;
@@ -228,15 +231,15 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
 
                 struct stat substatA; // struct for the stats of path
 
-                if (stat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFREG)
+                if (lstat(path, &substatA) == 0 && (substatA.st_mode & S_IFMT) == S_IFREG)
                 {
-                    push(differentPaths, path); //In case it is a file, insert in the differentPaths list
+                    push(differentPaths, path); // In case it is a file, insert in the differentPaths list
                 }
 
                 if ((substatA.st_mode & S_IFMT) == S_IFDIR) // Check if path is a directory
-                {   
+                {
                     findDifferences(path, dirB, commonPaths, differentPaths); // Recursively compare subdirectory contents in order to print them as we already know they are different
-                    push(differentPaths, path); //Insert the directory inside the differentPaths list
+                    push(differentPaths, path);                               // Insert the directory inside the differentPaths list
                 }
             }
             closedir(dir); // close the directory
@@ -246,8 +249,8 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
         if (!found)
         {
             count++;
-            //printf("%s\n", pathA); // print the full path to entryA
-            push(differentPaths, pathA); //Insert entry in differentPaths list
+            // printf("%s\n", pathA); // print the full path to entryA
+            push(differentPaths, pathA); // Insert entry in differentPaths list
         }
     }
 
@@ -260,26 +263,26 @@ int findDifferences(const char *dirA, const char *dirB, List commonPaths, List d
 }
 
 void compareDirectories(char *dirA, char *dirB) // Function to call the findDifferencies function
-{   
-    //Creating lists for saving the results of the comparison
+{
+    // Creating lists for saving the results of the comparison
     List commonPaths = Create();
     List differentPathsA = Create();
     List differentPathsB = Create();
 
     printf("In %s:\n", dirA); // First checking if the contents of dirA are found in dirB
-    int diffs1 = findDifferences(dirA, dirB, commonPaths, differentPathsA); 
-    PrintList(differentPathsA); //Printing the differencies between dirA and dirB
+    int diffs1 = findDifferences(dirA, dirB, commonPaths, differentPathsA);
+    PrintList(differentPathsA); // Printing the differencies between dirA and dirB
 
     printf("In %s:\n", dirB); // Then checking if the contents of dirB are fount in dirA
     int diffs2 = findDifferences(dirB, dirA, commonPaths, differentPathsB);
-    PrintList(differentPathsB); //Printing the differencies between dirB and dirA
+    PrintList(differentPathsB); // Printing the differencies between dirB and dirA
 
     if (!diffs1 && !diffs2) // If there are no differencies
     {
         printf("No differences between %s and %s\n", dirA, dirB); // print a message
     }
 
-    //delete the lists
+    // delete the lists
     deleteList(commonPaths);
     deleteList(differentPathsA);
     deleteList(differentPathsB);

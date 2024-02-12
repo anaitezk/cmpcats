@@ -10,66 +10,66 @@
 #include "list.h"
 #include "compareDirectories.h"
 
-//Function to copy a file into a specified directory
-int copyFile(const char *src, const char *dest)
+// Function to copy a file into a specified directory
+void copyFile(const char *src, const char *dest)
 {
-    int srcFd, destFd; //File descriptor for source and destination files
+    int srcFd, destFd; // File descriptor for source and destination files
     char buffer[BUFSIZ];
     long bytesRead, bytesWritten;
 
-    srcFd = open(src, O_RDONLY); //Open source file only for reading
-    if (srcFd == -1) //Check for correct opening of the file
+    srcFd = open(src, O_RDONLY); // Open source file only for reading
+    if (srcFd == -1)             // Check for correct opening of the file
     {
         perror("open src");
-        return -1;
+        return;
     }
 
-    destFd = creat(dest, 0644); //Creating the destination file
-    if (destFd == -1) //Checking for correct creation
+    destFd = creat(dest, 0644); // Creating the destination file
+    if (destFd == -1)           // Checking for correct creation
     {
         perror("open dest");
         close(srcFd);
-        return -1;
+        return;
     }
 
-    //Copying the source file's contents in the destination file
-    while ((bytesRead = read(srcFd, buffer, sizeof(buffer))) > 0) //Reading from the source file
+    // Copying the source file's contents in the destination file
+    while ((bytesRead = read(srcFd, buffer, sizeof(buffer))) > 0) // Reading from the source file
     {
-        bytesWritten = write(destFd, buffer, bytesRead); //Writing to the destination file
-        if (bytesWritten == -1) //Checking for correct writing in destination file
+        bytesWritten = write(destFd, buffer, bytesRead); // Writing to the destination file
+        if (bytesWritten == -1)                          // Checking for correct writing in destination file
         {
             perror("write");
             close(srcFd);
             close(destFd);
-            return -1;
+            return;
         }
     }
 
-    if (bytesRead == -1) //Checking for correct reading from source file
+    if (bytesRead == -1) // Checking for correct reading from source file
     {
         perror("read");
         close(srcFd);
         close(destFd);
-        return -1;
+        return;
     }
 
-    close(srcFd); //closing source file
-    close(destFd); //closing destination file
-    return 0;
+    close(srcFd);  // closing source file
+    close(destFd); // closing destination file
+    return;
 }
 
 int copyDirectory(const char *source, const char *destination, List list)
 {
     int count = 0;
     DIR *dir = opendir(source); // Open the source directory
-    if (!dir) //Checking for correct opening
+    if (!dir)                   // Checking for correct opening
     {
         perror("opendir");
         return -1;
     }
 
     // Create destination directory if it doesn't exist
-    if (mkdir(destination, 0777) == -1 && errno != EEXIST) //Checking for potentital errors other than the directory existing
+    if (mkdir(destination, 0777) == -1 && errno != EEXIST) // Checking for potentital errors other than the directory existing
     {
         perror("mkdir");
         closedir(dir);
@@ -89,7 +89,7 @@ int copyDirectory(const char *source, const char *destination, List list)
 
         struct stat dirstat;
         struct stat deststat;
-        if (stat(sourcePath, &dirstat) == -1)
+        if (lstat(sourcePath, &dirstat) == -1)
         {
             perror("stat");
             continue;
@@ -100,10 +100,28 @@ int copyDirectory(const char *source, const char *destination, List list)
             count++;
             count += copyDirectory(sourcePath, destPath, list); // Recursively copy directories
         }
-        else if (searchList(list, sourcePath))
+        else if (dirstat.st_mode & S_IFMT == S_IFREG && searchList(list, sourcePath))
         {
             count++;
             copyFile(sourcePath, destPath);
+        }
+        else if ((dirstat.st_mode & S_IFMT) == S_IFLNK && searchList(list, sourcePath))
+        {
+            char buf[1024];
+            ssize_t len;
+            if ((len = readlink(sourcePath, buf, sizeof(buf) - 1)) != -1)
+            {
+                buf[len] = '\0';
+                printf("buf=%s\n", buf);
+                if (symlink(buf, destPath) == -1)
+                {
+                    perror("Error creating soft link");
+                }
+            }
+            else
+            {
+                perror("Error reading soft link");
+            }
         }
     }
 
@@ -120,7 +138,7 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
     findDifferences(dirB, dirA, commonPaths, differentPaths);
 
     struct stat dirCstat;
-    if (stat(dirC, &dirCstat) == 0 && (dirCstat.st_mode & S_IFMT) == S_IFDIR) // If the directory exists, delete it.
+    if (lstat(dirC, &dirCstat) == 0 && (dirCstat.st_mode & S_IFMT) == S_IFDIR) // If the directory exists, delete it.
     {
         // Making sure the user wants the directory to be deleted
         char answer[5];
@@ -175,7 +193,7 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
             struct stat statC;
             struct stat statA;
 
-            if (stat(current->Data, &statA) == -1)
+            if (lstat(current->Data, &statA) == -1)
             {
                 perror("stat");
                 current = current->Next;
@@ -194,11 +212,11 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
                     }
                 }
             }
-            else if (stat(PathC, &statC) == 0 && (statA.st_mode & S_IFMT) == S_IFREG && (statC.st_mode & S_IFMT) == S_IFREG)
+            else if (lstat(PathC, &statC) == 0 && (statA.st_mode & S_IFMT) == S_IFREG && (statC.st_mode & S_IFMT) == S_IFREG)
             {
                 // If file exists, compare modification dates
                 struct stat srcStat;
-                if (stat(current->Data, &srcStat) == 0)
+                if (lstat(current->Data, &srcStat) == 0)
                 {
                     // If the src file is newer, copy it to dirC
                     if (difftime(srcStat.st_mtime, statC.st_mtime) > 0)
@@ -210,6 +228,24 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
             else if ((statA.st_mode & S_IFMT) == S_IFREG)
             {
                 copyFile(current->Data, PathC);
+            }
+            else if ((statA.st_mode & S_IFMT) == S_IFLNK)
+            {
+                char buf[1024];
+                ssize_t len;
+                if ((len = readlink(current->Data, buf, sizeof(buf) - 1)) != -1)
+                {
+                    buf[len] = '\0';
+                    printf("buf = %s\n", buf);
+                    if (symlink(buf, PathC) == -1)
+                    {
+                        perror("Error creating soft link");
+                    }
+                }
+                else
+                {
+                    perror("Error reading soft link");
+                }
             }
         }
 
@@ -241,13 +277,13 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
         if (filename != NULL)
         {
             char PathC[1000];
-            sprintf(PathC, "%s/%s", dirC, filename);
+            sprintf(PathC, "%s%s", dirC, filename);
 
             // Check if the file already exists in dirC
             struct stat statC;
             struct stat statA;
 
-            if (stat(current->Data, &statA) == -1)
+            if (lstat(current->Data, &statA) == -1)
             {
                 perror("stat");
                 current = current->Next;
@@ -267,6 +303,23 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
             {
                 copyFile(current->Data, PathC);
             }
+            else if ((statA.st_mode & S_IFMT) == S_IFLNK)
+            {
+                char buf[1024];
+                ssize_t len;
+                if ((len = readlink(current->Data, buf, sizeof(buf) - 1)) != -1)
+                {
+                    buf[len] = '\0';
+                    if (symlink(buf, PathC) == -1)
+                    {
+                        perror("Error creating soft link");
+                    }
+                }
+                else
+                {
+                    perror("Error reading soft link");
+                }
+            }
         }
 
         current = current->Next;
@@ -275,5 +328,5 @@ void mergeDirectories(char *dirA, char *dirB, char *dirC)
     deleteList(commonPaths);
     deleteList(differentPaths);
 
-    printf("Merged directory %s has been created\n",dirC);
+    printf("Merged directory %s has been created\n", dirC);
 }

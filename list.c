@@ -16,11 +16,6 @@ int Size(List list)
     return list->Count;
 }
 
-int IsEmpty(List list)
-{
-    return (list->Start == NULL); // Returning 1 if list is empty,0 otherwise
-}
-
 void push(List list, char *item)
 {
     node newNode = malloc(sizeof(*newNode)); // Allocating enough memory for a node
